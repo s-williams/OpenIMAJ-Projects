@@ -51,6 +51,7 @@ public class App {
    			    histograms.add( model.histogram.clone() );
    			}
     		
+    		// 4.1.1
     		double lowest = Double.MAX_VALUE;
     		int ii = 0;
     		int jj = 0;
@@ -78,7 +79,19 @@ public class App {
     		// The result is that the two sunset images are displayed. This is the expected result since the two sunset images
     		// look similar and have a similar use of colours with lots of reds visible - unlike the moon photo image which
     		// has lots of grays that aren't featured in the other two images.
+    		
+    		// 4.1.2    		
+    		for( int i = 0; i < histograms.size(); i++ ) {
+    		    for( int j = i; j < histograms.size(); j++ ) {
+    		        double intersection = histograms.get(i).compare( histograms.get(j), DoubleFVComparison.INTERSECTION );
+    		        
+    		        System.out.println("Intersection: " + intersection + " with images " + i + " and " + j);
+    		    }
+    		}
 
+    		// INTERSECTION is similar to EUCLIDEAN but different. With intersection, the most similar images receive a score
+    		// of 1 whilst the most dissimilar images achieve a score of 0. Essentially, this finds the overlap between two
+    		// images. Again, the two sunset images are found to be most similar.
 
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
