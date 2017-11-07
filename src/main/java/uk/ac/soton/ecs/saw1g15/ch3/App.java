@@ -19,6 +19,7 @@ import org.openimaj.image.connectedcomponent.GreyscaleConnectedComponentLabeler;
 import org.openimaj.image.pixel.ConnectedComponent;
 import org.openimaj.image.processing.convolution.FGaussianConvolve;
 import org.openimaj.image.processing.edges.CannyEdgeDetector;
+import org.openimaj.image.processor.PixelProcessor;
 import org.openimaj.image.typography.hershey.HersheyFont;
 import org.openimaj.math.geometry.shape.Ellipse;
 import org.openimaj.ml.clustering.FloatCentroidsResult;
@@ -60,6 +61,15 @@ public class App {
     		}
     		
     		HardAssigner<float[],?,?> assigner = result.defaultHardAssigner();
+    		
+    		// Loop over image pixels with pixel processor
+    		input.processInplace(new PixelProcessor<Float[]>() {
+    		    public Float[] processPixel(Float[] pixel) {
+					return pixel;
+    		    }
+    		});
+
+    		// Assign each pixel in our image to its respective class using the centroids
     		for (int y=0; y<input.getHeight(); y++) {
     		    for (int x=0; x<input.getWidth(); x++) {
     		        float[] pixel = input.getPixelNative(x, y);
@@ -83,8 +93,6 @@ public class App {
 			}
 
 			DisplayUtilities.display(input);
-
-
 
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
