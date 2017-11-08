@@ -13,7 +13,7 @@ public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
 	@Override
 	public void processImage(FImage image) {
 		// convolve image with kernel and store result back in image
-		//
+
 		// hint: use FImage#internalAssign(FImage) to set the contents
 		// of your temporary buffer image to the image.
 	}
