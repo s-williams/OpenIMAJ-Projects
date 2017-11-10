@@ -69,28 +69,28 @@ public class App {
     		t1 = Timer.timer();
     		
     		// Parallel Code
-    		for (ListDataset<MBFImage> clzImages : images.values()) {
-    			final MBFImage current = new MBFImage(200, 200, ColourSpace.RGB);
-
-    		    Parallel.forEach(clzImages, new Operation<MBFImage>() {
-    		        public void perform(MBFImage i) {
-    		            final MBFImage tmp = new MBFImage(200, 200, ColourSpace.RGB);
-    		            tmp.fill(RGBColour.WHITE);
-
-    		            final MBFImage small = i.process(resize).normalise();
-    		            final int x = (200 - small.getWidth()) / 2;
-    		            final int y = (200 - small.getHeight()) / 2;
-    		            tmp.drawImage(small, x, y);
-
-    		            synchronized (current) {
-    		                current.addInplace(tmp);
-    		            }
-    		        }
-    		    });
-
-    		    current.divideInplace((float) clzImages.size());
-    		    output.add(current);
-    		}
+//    		for (ListDataset<MBFImage> clzImages : images.values()) {
+//    			final MBFImage current = new MBFImage(200, 200, ColourSpace.RGB);
+//
+//    		    Parallel.forEach(clzImages, new Operation<MBFImage>() {
+//    		        public void perform(MBFImage i) {
+//    		            final MBFImage tmp = new MBFImage(200, 200, ColourSpace.RGB);
+//    		            tmp.fill(RGBColour.WHITE);
+//
+//    		            final MBFImage small = i.process(resize).normalise();
+//    		            final int x = (200 - small.getWidth()) / 2;
+//    		            final int y = (200 - small.getHeight()) / 2;
+//    		            tmp.drawImage(small, x, y);
+//
+//    		            synchronized (current) {
+//    		                current.addInplace(tmp);
+//    		            }
+//    		        }
+//    		    });
+//
+//    		    current.divideInplace((float) clzImages.size());
+//    		    output.add(current);
+//    		}
     		
     		System.out.println("Time: " + t1.duration() + "ms");
 
