@@ -9,6 +9,7 @@ import org.openimaj.image.FImage;
 import org.openimaj.image.ImageUtilities;
 import org.openimaj.image.MBFImage;
 import org.openimaj.image.processing.convolution.Gaussian2D;
+import org.openimaj.image.processing.resize.ResizeProcessor;
 import org.openimaj.image.processor.SinglebandImageProcessor;
 
 public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
@@ -33,16 +34,20 @@ public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
 		FImage temp = new FImage(iRows, iCols);
 		
 		// half kernal rows/columns
-		int thRows = (int) Math.floor(tRows / 2);
-		int thCols = (int) Math.floor(tCols / 2);
+		int trhalf = (int) Math.floor(tRows / 2);
+		int tchalf = (int) Math.floor(tCols / 2);
 		
 		// convolve
-		for (int x = thRows + 1; x < iCols - thRows ; x++) {
-			for (int y = thCols + 1; y < iRows - thCols ; y++) {
+		for (int x = trhalf + 1; x < iCols - trhalf ; x++) {
+			for (int y = tchalf + 1; y < iRows - tchalf ; y++) {
 				float sum = 0;
 				for (int iWin = 1; iWin < tRows; iWin++) {
 					for (int jWin = 1; jWin < tCols; jWin++) {
-						sum = sum + image.getPixel(y + jWin - thCols - 1, x + iWin - thRows - 1) * kernel[jWin][iWin];
+						try {
+							sum = sum + image.getPixel(y + jWin - tchalf - 1, x + iWin - trhalf - 1) * kernel[jWin][iWin];
+						} catch (ArrayIndexOutOfBoundsException e) {
+							// skip
+						}
 					}
 				}
 				temp.setPixel(y, x, sum);
@@ -51,22 +56,31 @@ public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
 		
 		// normalise temp image
 		temp.normalise();
-		
-		// display the image
-		DisplayUtilities.display(temp);
 	}
 	
 	public static void hybrid(MBFImage image1, MBFImage image2) {
-		float sigma = 5.0f;
-	
+		float sigma = 1.0f;
+		
 		int size = (int) (8.0f * sigma + 1.0f); // (this implies the window is +/- 4 sigmas from the centre of the Gaussian)
 		if (size % 2 == 0) size++; // size must be odd
-		
 		float[][] filter = Gaussian2D.createKernelImage(size, sigma).pixels;
 		
 		MyConvolution convo = new MyConvolution(filter);
 		
-		convo.processImage(image2.flatten());
+		// low pass both images
+		MBFImage processed1 = image1.process(convo.processImage(image2.flatten()));
+		MBFImage processed2; // TODO
+		
+		// high pass
+		processed2 = image2.subtract(processed2);
+		
+		// add the two images
+//		MBFImage hybrid = processed1.add(processed2);
+		
+		// display the image
+//		DisplayUtilities.display(hybrid);
+//		DisplayUtilities.display(hybrid.process(new ResizeProcessor(0.1f)));
+		
 	}
 	
 	public static void main(String[] args) {
