@@ -1,5 +1,6 @@
 package uk.ac.soton.ecs.saw1g15.coursework;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystemException;
@@ -24,31 +25,32 @@ public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
 	@Override
 	public void processImage(FImage image) {
 		// get image dimensions
-		int iRows = image.height;
-		int iCols = image.width;
+		int iRows = image.getRows();
+		int iCols = image.getCols();
 		
 		// get kernel dimensions
-		int tRows = kernel[0].length;
-		int tCols = kernel.length;
+		int tRows = kernel.length;
+		int tCols = kernel[0].length;
 		
 		// set a temporary image to black
-		FImage temp = new FImage(iCols, iRows);
+		FImage temp = image.clone().fill(0);
 		
 		// half kernal rows/columns
 		int trhalf = (int) Math.floor(tRows / 2);
 		int tchalf = (int) Math.floor(tCols / 2);
 		
 		// convolve
-		for (int x = trhalf + 1; x < iCols - trhalf ; x++) {
-			for (int y = tchalf + 1; y < iRows - tchalf ; y++) {
+		for (int x = trhalf + 1; x < iCols - trhalf; x++) {
+			for (int y = tchalf + 1; y < iRows - tchalf; y++) {
+				
+				// reset sum to zero
 				float sum = 0;
+				
 				for (int iWin = 1; iWin < tRows; iWin++) {
 					for (int jWin = 1; jWin < tCols; jWin++) {
 						try {
-							sum = sum + image.getPixel(y + jWin - tchalf - 1, x + iWin - trhalf - 1) * kernel[jWin][iWin];
-						} catch (ArrayIndexOutOfBoundsException e) {
-							// skip
-						}
+							sum = sum + image.getPixel(y + jWin - 1, x + iWin  - 1) * kernel[jWin][iWin];
+						} catch (ArrayIndexOutOfBoundsException e) {}
 					}
 				}
 				temp.setPixel(y, x, sum);
@@ -57,6 +59,8 @@ public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
 		
 		// normalise temp image
 		FImage convolved = temp.normalise();
+		
+		// return convolved image
 		image.internalAssign(convolved);
 	}
 	
@@ -73,23 +77,16 @@ public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
 		MBFImage processed2 = image2.process(mc);
 		
 		DisplayUtilities.display(processed1);
-		DisplayUtilities.display(image1);
-		DisplayUtilities.display(processed2);
-		DisplayUtilities.display(image2);
-//		
-		// high pass
-		processed2 = image2.subtract(processed2);
-		
 		DisplayUtilities.display(processed2);
 
+		// high pass
+		processed2 = image2.subtract(processed2);
 		
 		// add the two images
 		MBFImage hybrid = processed1.add(processed2);
 		
 		// display the image
 		DisplayUtilities.display(hybrid);
-		DisplayUtilities.display(hybrid.process(new ResizeProcessor(0.1f)));
-		
 	}
 	
 	public static void main(String[] args) {
