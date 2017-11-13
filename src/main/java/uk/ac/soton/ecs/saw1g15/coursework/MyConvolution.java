@@ -8,6 +8,7 @@ import org.openimaj.image.DisplayUtilities;
 import org.openimaj.image.FImage;
 import org.openimaj.image.ImageUtilities;
 import org.openimaj.image.MBFImage;
+import org.openimaj.image.processing.convolution.FConvolution;
 import org.openimaj.image.processing.convolution.Gaussian2D;
 import org.openimaj.image.processing.resize.ResizeProcessor;
 import org.openimaj.image.processor.SinglebandImageProcessor;
@@ -31,7 +32,7 @@ public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
 		int tCols = kernel.length;
 		
 		// set a temporary image to black
-		FImage temp = new FImage(iRows, iCols);
+		FImage temp = new FImage(iCols, iRows);
 		
 		// half kernal rows/columns
 		int trhalf = (int) Math.floor(tRows / 2);
@@ -55,31 +56,39 @@ public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
 		}
 		
 		// normalise temp image
-		temp.normalise();
+		FImage convolved = temp.normalise();
+		image.internalAssign(convolved);
 	}
 	
 	public static void hybrid(MBFImage image1, MBFImage image2) {
-		float sigma = 1.0f;
+		float sigma = 2.0f;
 		
 		int size = (int) (8.0f * sigma + 1.0f); // (this implies the window is +/- 4 sigmas from the centre of the Gaussian)
 		if (size % 2 == 0) size++; // size must be odd
 		float[][] filter = Gaussian2D.createKernelImage(size, sigma).pixels;
 		
-		MyConvolution convo = new MyConvolution(filter);
-		
 		// low pass both images
-		MBFImage processed1 = image1.process(convo.processImage(image2.flatten()));
-		MBFImage processed2; // TODO
+		MyConvolution mc = new MyConvolution(filter);
+		MBFImage processed1 = image1.process(mc);
+		MBFImage processed2 = image2.process(mc);
 		
+		DisplayUtilities.display(processed1);
+		DisplayUtilities.display(image1);
+		DisplayUtilities.display(processed2);
+		DisplayUtilities.display(image2);
+//		
 		// high pass
 		processed2 = image2.subtract(processed2);
 		
+		DisplayUtilities.display(processed2);
+
+		
 		// add the two images
-//		MBFImage hybrid = processed1.add(processed2);
+		MBFImage hybrid = processed1.add(processed2);
 		
 		// display the image
-//		DisplayUtilities.display(hybrid);
-//		DisplayUtilities.display(hybrid.process(new ResizeProcessor(0.1f)));
+		DisplayUtilities.display(hybrid);
+		DisplayUtilities.display(hybrid.process(new ResizeProcessor(0.1f)));
 		
 	}
 	
@@ -104,8 +113,5 @@ public class MyConvolution implements SinglebandImageProcessor<Float, FImage> {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-			
-			
 	}
 }
