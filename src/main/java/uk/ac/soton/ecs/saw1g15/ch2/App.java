@@ -18,7 +18,7 @@ import org.openimaj.image.typography.hershey.HersheyFont;
 import org.openimaj.math.geometry.shape.Ellipse;
 
 /**
- * OpenIMAJ Hello world!
+ * Processing my first image!
  *
  */
 public class App {

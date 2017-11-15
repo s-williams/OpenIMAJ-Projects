@@ -21,7 +21,7 @@ import org.openimaj.util.function.Operation;
 import org.openimaj.util.parallel.Parallel;
 
 /**
- * OpenIMAJ Hello world!
+ * Parallel Processing!
  *
  */
 public class App {

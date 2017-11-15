@@ -8,7 +8,7 @@ import org.openimaj.image.processing.convolution.FGaussianConvolve;
 import org.openimaj.image.typography.hershey.HersheyFont;
 
 /**
- * OpenIMAJ Hello world!
+ * Face recognition 101: Eigenfaces!
  *
  */
 public class App {

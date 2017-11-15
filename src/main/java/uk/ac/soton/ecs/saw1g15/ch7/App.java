@@ -22,7 +22,7 @@ import org.openimaj.video.capture.VideoCapture;
 import org.openimaj.video.xuggle.XuggleVideo;
 
 /**
- * OpenIMAJ Hello world!
+ * Processing video!
  *
  */
 public class App {

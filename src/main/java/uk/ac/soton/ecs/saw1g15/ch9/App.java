@@ -16,7 +16,7 @@ import org.openimaj.video.xuggle.XuggleAudio;
 import org.openimaj.vis.audio.AudioWaveform;
 
 /**
- * OpenIMAJ Hello world!
+ * Getting Audio and Basic Processing!
  *
  */
 public class App {

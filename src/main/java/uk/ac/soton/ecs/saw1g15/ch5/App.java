@@ -25,7 +25,7 @@ import org.openimaj.math.geometry.transforms.estimation.RobustHomographyEstimato
 import org.openimaj.math.model.fit.RANSAC;
 
 /**
- * OpenIMAJ Hello world!
+ * SIFT and feature matching!
  *
  */
 public class App {

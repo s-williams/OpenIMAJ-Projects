@@ -31,7 +31,7 @@ import org.openimaj.ml.clustering.assignment.HardAssigner;
 import org.openimaj.ml.clustering.kmeans.FloatKMeans;
 
 /**
- * OpenIMAJ Hello world!
+ * Global image features!
  *
  */
 public class App {

@@ -27,7 +27,7 @@ import org.openimaj.ml.clustering.assignment.HardAssigner;
 import org.openimaj.ml.clustering.kmeans.FloatKMeans;
 
 /**
- * OpenIMAJ Hello world!
+ * Clustering, segmentation and connected components!
  *
  */
 public class App {

@@ -8,7 +8,7 @@ import org.openimaj.image.processing.convolution.FGaussianConvolve;
 import org.openimaj.image.typography.hershey.HersheyFont;
 
 /**
- * OpenIMAJ Hello world!
+ * Twitter Streams and Images!
  *
  */
 public class App {

@@ -25,7 +25,7 @@ import org.openimaj.video.VideoDisplayListener;
 import org.openimaj.video.capture.VideoCapture;
 
 /**
- * OpenIMAJ Hello world!
+ * Finding faces!
  *
  */
 public class App {

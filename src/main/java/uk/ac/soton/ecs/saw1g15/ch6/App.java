@@ -22,7 +22,7 @@ import org.openimaj.util.api.auth.common.BingAPIToken;
 import org.openimaj.util.api.auth.common.FlickrAPIToken;
 
 /**
- * OpenIMAJ Hello world!
+ * Image Datasets!
  *
  */
 public class App {
