@@ -23,7 +23,6 @@ public class App {
         image.drawText("Timeo Danaos et", 10, 60, HersheyFont.TIMES_MEDIUM, 50, RGBColour.DARK_GRAY);
         image.drawText("dona ferentes", 10, 120, HersheyFont.TIMES_MEDIUM, 50, RGBColour.DARK_GRAY);
 
-
         //Apply a Gaussian blur
         image.processInplace(new FGaussianConvolve(2f));
         

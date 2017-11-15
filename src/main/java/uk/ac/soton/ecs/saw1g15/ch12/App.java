@@ -2,6 +2,7 @@ package uk.ac.soton.ecs.saw1g15.ch12;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.openimaj.data.DataSource;
 import org.openimaj.data.dataset.Dataset;
@@ -11,6 +12,10 @@ import org.openimaj.data.dataset.VFSListDataset;
 import org.openimaj.experiment.dataset.sampling.GroupSampler;
 import org.openimaj.experiment.dataset.sampling.GroupedUniformRandomisedSampler;
 import org.openimaj.experiment.dataset.split.GroupedRandomSplitter;
+import org.openimaj.experiment.evaluation.classification.ClassificationEvaluator;
+import org.openimaj.experiment.evaluation.classification.ClassificationResult;
+import org.openimaj.experiment.evaluation.classification.analysers.confusionmatrix.CMAnalyser;
+import org.openimaj.experiment.evaluation.classification.analysers.confusionmatrix.CMResult;
 import org.openimaj.feature.DoubleFV;
 import org.openimaj.feature.FeatureExtractor;
 import org.openimaj.feature.SparseIntFV;
@@ -31,10 +36,14 @@ import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
 import org.openimaj.image.feature.local.aggregate.BlockSpatialAggregator;
 import org.openimaj.image.processing.convolution.FGaussianConvolve;
 import org.openimaj.image.typography.hershey.HersheyFont;
+import org.openimaj.ml.annotation.linear.LiblinearAnnotator;
+import org.openimaj.ml.annotation.linear.LiblinearAnnotator.Mode;
 import org.openimaj.ml.clustering.ByteCentroidsResult;
 import org.openimaj.ml.clustering.assignment.HardAssigner;
 import org.openimaj.ml.clustering.kmeans.ByteKMeans;
 import org.openimaj.util.pair.IntFloatPair;
+
+import de.bwaldvogel.liblinear.SolverType;
 
 /**
  * Classification with Caltech 101!
@@ -103,8 +112,19 @@ public class App {
     		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 7);
     		
     		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(GroupedUniformRandomisedSampler.sample(splits.getTrainingDataset(), 30), pdsift);
+    		
+    		FeatureExtractor<DoubleFV, Record<FImage>> extractor = new PHOWExtractor(pdsift, assigner);
+			
+    		LiblinearAnnotator<Record<FImage>, String> ann = new LiblinearAnnotator<Record<FImage>, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
+    		ann.train(splits.getTrainingDataset());
 
-
+    		// Automated evaluation of the accuracy of the classifier
+    		ClassificationEvaluator<CMResult<String>, String, Record<FImage>> eval = new ClassificationEvaluator<CMResult<String>, String, Record<FImage>>(ann, splits.getTestDataset(), new CMAnalyser<Record<FImage>, String>(CMAnalyser.Strategy.SINGLE));
+    					
+    		Map<Record<FImage>, ClassificationResult<String>> guesses = eval.evaluate();
+    		CMResult<String> result = eval.analyse(guesses);
+    		
+    		System.out.println("done");
 
     	} catch (Exception e) {
     		e.printStackTrace();
