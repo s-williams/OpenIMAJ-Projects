@@ -10,6 +10,7 @@ import java.util.List;
 
 import javax.swing.JFrame;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.openimaj.image.DisplayUtilities;
 import org.openimaj.image.ImageUtilities;
 import org.openimaj.image.MBFImage;
@@ -20,6 +21,8 @@ import org.openimaj.image.pixel.ConnectedComponent;
 import org.openimaj.image.processing.convolution.FGaussianConvolve;
 import org.openimaj.image.processing.edges.CannyEdgeDetector;
 import org.openimaj.image.processor.PixelProcessor;
+import org.openimaj.image.segmentation.FelzenszwalbHuttenlocherSegmenter;
+import org.openimaj.image.segmentation.SegmentationUtilities;
 import org.openimaj.image.typography.hershey.HersheyFont;
 import org.openimaj.math.geometry.shape.Ellipse;
 import org.openimaj.ml.clustering.FloatCentroidsResult;
@@ -31,12 +34,18 @@ import org.openimaj.ml.clustering.kmeans.FloatKMeans;
  *
  */
 public class App {
+	
+	public static HardAssigner<float[],?,?> assigner;
+	public static float[][] centroids;
+	
     public static void main( String[] args ) {
     	try {
+    		// Selection of different inputs
 //    		MBFImage input = ImageUtilities.readMBF(new URL("https://i.redd.it/1bvygg20ghsz.jpg"));
 //    		MBFImage input = ImageUtilities.readMBF(new URL("https://i.redd.it/knbs8h5s43gz.jpg"));
-//    		MBFImage input = ImageUtilities.readMBF(new URL("https://i.redd.it/uwvjph19mltz.jpg"));
-    		MBFImage input = ImageUtilities.readMBF(new URL("https://i.imgur.com/4nlgwoc.jpg"));
+    		MBFImage input = ImageUtilities.readMBF(new URL("https://i.redd.it/uwvjph19mltz.jpg"));
+//    		MBFImage input = ImageUtilities.readMBF(new URL("https://i.imgur.com/4nlgwoc.jpg"));
+    		MBFImage cloned = input.clone();
     		System.out.println("Image input");
     		
     		// Apply a colour space transform to the image RGB - LAB
@@ -48,35 +57,31 @@ public class App {
     		FloatKMeans cluster = FloatKMeans.createExact(2);
     		System.out.println("K means algorithm generated");
     		
-    		//Flatten pixels
+    		// Flatten pixels
     		float[][] imageData = input.getPixelVectorNative(new float[input.getWidth() * input.getHeight()][3]);
     		System.out.println("Pixels flatterned");
     		
     		FloatCentroidsResult result = cluster.cluster(imageData);
     		System.out.println("Pixels grouped");
     		
-    		float[][] centroids = result.centroids;
+    		centroids = result.centroids;
     		for (float[] fs : centroids) {
     		    System.out.println(Arrays.toString(fs));
     		}
     		
-    		HardAssigner<float[],?,?> assigner = result.defaultHardAssigner();
+    		assigner = result.defaultHardAssigner();
     		
-    		// Loop over image pixels with pixel processor
+    		// 3.1.1 Loop over image pixels with pixel processor
     		input.processInplace(new PixelProcessor<Float[]>() {
     		    public Float[] processPixel(Float[] pixel) {
-					return pixel;
+    		    	// Uses ArrayUtils to convert the Float[] pixel into a float[] which can then be used by the centroid
+    		    	float[] lower = ArrayUtils.toPrimitive(pixel);
+    		    	int centroid = assigner.assign(lower);
+    		    	lower = centroids[centroid];
+    		    	pixel = ArrayUtils.toObject(lower);
+    		    	return pixel;
     		    }
     		});
-
-    		// Assign each pixel in our image to its respective class using the centroids
-    		for (int y=0; y<input.getHeight(); y++) {
-    		    for (int x=0; x<input.getWidth(); x++) {
-    		        float[] pixel = input.getPixelNative(x, y);
-    		        int centroid = assigner.assign(pixel);
-    		        input.setPixelNative(x, y, centroids[centroid]);
-    		    }
-    		}
     		
     		input = ColourSpace.convert(input, ColourSpace.RGB);
     		DisplayUtilities.display(input);
@@ -93,6 +98,12 @@ public class App {
 			}
 
 			DisplayUtilities.display(input);
+			
+			// 3.1.2 Running Felzenswalb Huttenlocher Segmenter
+			// This segmenter takes a much longer time but the results are much better
+			// It is very evident that the algorithm is different from what we have implemented since there are components that overlap
+			FelzenszwalbHuttenlocherSegmenter felz = new FelzenszwalbHuttenlocherSegmenter();
+			DisplayUtilities.display(SegmentationUtilities.renderSegments(cloned, felz.segment(cloned)));
 
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block

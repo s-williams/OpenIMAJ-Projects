@@ -24,16 +24,19 @@ import org.openimaj.math.geometry.shape.Ellipse;
 public class App {
     public static void main( String[] args ) {
     	try {
+    		// 2.1.1 Using a named display to ensure only one window is opened throughout the program
     		JFrame jframe = new JFrame("Chapter 2");
     		
+    		// Reading an image from a URL
 			MBFImage image = ImageUtilities.readMBF(new URL("http://static.openimaj.org/media/tutorial/sinaface.jpg"));
 			
 			System.out.println(image.colourSpace);
 			
+			// Displaying the image and the red channel of the image alone
 			DisplayUtilities.display(image, jframe);
-			
 			DisplayUtilities.display(image.getBand(0), jframe);
 			
+			// Setting all the blue and green channels of pixels to black, thus making a red version of the image
 			MBFImage clone = image.clone();
 			for (int y=0; y<image.getHeight(); y++) {
 			    for(int x=0; x<image.getWidth(); x++) {
@@ -43,10 +46,18 @@ public class App {
 			}
 			DisplayUtilities.display(clone, jframe);
 			
+			// Above can also just be like so:
+			// clone.getBand(1).fill(0f);
+			// clone.getBand(2).fill(0f);
+
+			// Running Canny Edge Detector alogorithm
 			image.processInplace(new CannyEdgeDetector());
 
 			DisplayUtilities.display(image, jframe);
 			
+			// Drawing speech bubbles
+			// 2.1.2 Speech bubble border is done by drawing a slightly larger red ellipse before drawing the white ellipse in 
+			// the same location. This creates the perception of a red border.
 			image.drawShapeFilled(new Ellipse(700f, 450f, 22f, 12f, 0f), RGBColour.RED);
 			image.drawShapeFilled(new Ellipse(700f, 450f, 20f, 10f, 0f), RGBColour.WHITE);
 			
@@ -59,6 +70,7 @@ public class App {
 			image.drawShapeFilled(new Ellipse(500f, 300f, 102f, 72f, 0f), RGBColour.RED);
 			image.drawShapeFilled(new Ellipse(500f, 300f, 100f, 70f, 0f), RGBColour.WHITE);
 			
+			// Filling speech bubble with text
 			image.drawText("OpenIMAJ is", 425, 300, HersheyFont.ASTROLOGY, 20, RGBColour.BLACK);
 			image.drawText("Awesome", 425, 330, HersheyFont.ASTROLOGY, 20, RGBColour.BLACK);
 			
@@ -71,22 +83,5 @@ public class App {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-//    	//Create an image
-//        MBFImage image = new MBFImage(500,140, ColourSpace.RGB);
-//
-//        //Fill the image with white
-//        image.fill(RGBColour.WHITE);
-//        		        
-//        //Render some test into the image
-//        image.drawText("Timeo Danaos et", 10, 60, HersheyFont.TIMES_MEDIUM, 50, RGBColour.DARK_GRAY);
-//        image.drawText("dona ferentes", 10, 120, HersheyFont.TIMES_MEDIUM, 50, RGBColour.DARK_GRAY);
-//
-//
-//        //Apply a Gaussian blur
-//        image.processInplace(new FGaussianConvolve(2f));
-//        
-//        //Display the image
-//        DisplayUtilities.display(image);
     }
 }
