@@ -40,7 +40,7 @@ public class App {
     		URL[] imageURLs = new URL[] {
 			   new URL( "http://users.ecs.soton.ac.uk/dpd/projects/openimaj/tutorial/hist1.jpg" ),
 			   new URL( "http://users.ecs.soton.ac.uk/dpd/projects/openimaj/tutorial/hist2.jpg" ), 
-			   new  URL( "http://users.ecs.soton.ac.uk/dpd/projects/openimaj/tutorial/hist3.jpg" ) 
+			   new URL( "http://users.ecs.soton.ac.uk/dpd/projects/openimaj/tutorial/hist3.jpg" ) 
 			};
     		
     		List<MultidimensionalHistogram> histograms = new ArrayList<MultidimensionalHistogram>();
@@ -51,7 +51,7 @@ public class App {
    			    histograms.add( model.histogram.clone() );
    			}
     		
-    		// 4.1.1
+    		// 4.1.1 Finding and displaying similar images
     		double lowest = Double.MAX_VALUE;
     		int ii = 0;
     		int jj = 0;
@@ -80,7 +80,7 @@ public class App {
     		// look similar and have a similar use of colours with lots of reds visible - unlike the moon photo image which
     		// has lots of grays that aren't featured in the other two images.
     		
-    		// 4.1.2    		
+    		// 4.1.2 Exploring the intersection comparison operator    		
     		for( int i = 0; i < histograms.size(); i++ ) {
     		    for( int j = i; j < histograms.size(); j++ ) {
     		        double intersection = histograms.get(i).compare( histograms.get(j), DoubleFVComparison.INTERSECTION );
@@ -94,10 +94,8 @@ public class App {
     		// images. Again, the two sunset images are found to be most similar.
 
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }

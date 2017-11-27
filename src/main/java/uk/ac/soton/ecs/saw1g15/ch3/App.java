@@ -106,10 +106,8 @@ public class App {
 			DisplayUtilities.display(SegmentationUtilities.renderSegments(cloned, felz.segment(cloned)));
 
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }

@@ -29,10 +29,10 @@ import org.openimaj.image.typography.hershey.HersheyFont;
 public class App {
     public static void main( String[] args ) {
     	try {
-    		// dataset of approximately aligned faces
+    		// Dataset of approximately aligned faces
     		VFSGroupDataset<FImage> dataset = new VFSGroupDataset<FImage>("zip:http://datasets.openimaj.org/att_faces.zip", ImageUtilities.FIMAGE_READER);
 			
-    		// split dataset into training and testing
+    		// Split dataset into training and testing
     		int nTraining = 5;
     		int nTesting = 5;
     		GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(dataset, nTraining, 0, nTesting);

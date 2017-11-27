@@ -98,19 +98,19 @@ public class App {
 	
     public static void main( String[] args ) {
     	try {
-    		// load Caltech data set
+    		// Load Caltech data set
     		GroupedDataset<String, VFSListDataset<Record<FImage>>, Record<FImage>> allData = 
     				Caltech101.getData(ImageUtilities.FIMAGE_READER);
     		
     		System.out.println("loaded dataset");
     		
-    		// work with only 5 classes of the data in order to minimise run time.
+    		// Work with only 5 classes of the data in order to minimise run time.
     		GroupedDataset<String, ListDataset<Record<FImage>>, Record<FImage>> data = 
     				GroupSampler.sample(allData, 5, false);
     		
     		System.out.println("split data into 5 classes");
     		
-    		// split data into training and testing data
+    		// Split data into training and testing data
     		GroupedRandomSplitter<String, Record<FImage>> splits = 
     				new GroupedRandomSplitter<String, Record<FImage>>(data, 15, 0, 15);
     		

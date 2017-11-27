@@ -61,9 +61,7 @@ public class App {
     		    	    frame.drawShapeFilled(new Ellipse(x - 200, y - 100, 100f, 70f, 0f), RGBColour.WHITE);
     		    	    frame.drawText("IMAJ is Fun", (int)x - 275, (int)y - 100, HersheyFont.ASTROLOGY, 20, RGBColour.BLACK);
     		    	    
-    		    	}
-    		    	
-    		    	
+    		    	}		    	
     		    }
 
     		    public void afterUpdate( VideoDisplay<MBFImage> display ) {

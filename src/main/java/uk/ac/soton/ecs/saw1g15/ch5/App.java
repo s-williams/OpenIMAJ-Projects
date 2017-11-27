@@ -86,7 +86,6 @@ public class App {
 			DisplayUtilities.display(target); 
 			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

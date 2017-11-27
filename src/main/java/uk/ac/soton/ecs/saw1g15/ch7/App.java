@@ -47,9 +47,7 @@ public class App {
     		    DisplayUtilities.displayName(mbfImage.process(new ResizeProcessor(60)), "Resize");
 
     		}
-
-
-
+    		
     	} catch (Exception e) {
     		e.printStackTrace();
     	}

@@ -84,10 +84,7 @@ public class App {
 
     		DisplayUtilities.display("Tanenbaum", celebs.getInstances("Tanenbaum"));
     		DisplayUtilities.display("Linus", celebs.getInstances("Linus"));
-
-
-
-
+    		
     	} catch (Exception e) {
     		e.printStackTrace();
     	}
