@@ -32,7 +32,7 @@ public class App {
     		Video<MBFImage> video = new XuggleVideo(new URL("http://static.openimaj.org/media/tutorial/keyboardcat.flv"));
     		
     		// From webcam
-//    		video = new VideoCapture(320, 240);
+			// video = new VideoCapture(320, 240);
     		
     		// Display the video
     		VideoDisplay<MBFImage> display = VideoDisplay.createVideoDisplay(video);

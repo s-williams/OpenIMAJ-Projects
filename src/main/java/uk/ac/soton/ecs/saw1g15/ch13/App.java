@@ -78,6 +78,15 @@ public class App {
     		                }
     		            }
     		        }
+    		        // 13.1.3 Applying a threshold
+    		        // The best threshold would achieve similar accuracy as if there was no threshold (0.94) and would only reject
+    		        // images that the guess is unknown for.
+    		        // Experimental evidence suggests this threshold to be around 14.0.
+    		        double threshold = 14.0;
+	                if (minDistance > threshold) {
+	                	minDistance = Double.MAX_VALUE;
+	                	bestPerson = "unknown";
+	                }
 
     		        System.out.println("Actual: " + truePerson + "\tguess: " + bestPerson);
 
@@ -89,6 +98,25 @@ public class App {
     		}
 
     		System.out.println("Accuracy: " + (correct / (correct + incorrect)));
+    		
+    		// 13.1.1 Reconstructing a face from the weights
+    		// Get a random face
+    		FImage randomFace = dataset.getRandomInstance();
+    		
+    		// Get its features
+    		final DoubleFV[] randomFeatures = new DoubleFV[nTraining];
+
+    	    for (int i = 0; i < nTraining; i++) {
+    	    	randomFeatures[i] = eigen.extractFeature(randomFace);
+    	    }
+    		
+    		// Reconstruct it
+    		DisplayUtilities.display(eigen.reconstruct(randomFeatures[0]).normalise());
+    		
+    		// 13.1.2 Exploring the effect of training set size
+    		// Increasing the number of training images increases the accuracy. With just 5 training images, the performance
+    		// is around 93%. With 6, its 96%. With 7, 97%. With 8, 99%. I expect performance gains to be logarithmic with larger
+    		// numbers of training images approaching but not quite reaching 100%.
 
     	} catch (Exception e) {
     		e.printStackTrace();
