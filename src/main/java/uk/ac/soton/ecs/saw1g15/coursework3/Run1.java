@@ -14,7 +14,19 @@ import org.openimaj.image.processing.resize.ResizeProcessor;
 
 public class Run1 {
 
-	public final static int K = 20;
+	public final static int K = 1;
+	
+	static float[] createVector(FImage image) {
+		int counter = 0;
+		float[] imageVector = new float[image.getRows() * image.getCols()];
+		for (int i = 0; i < image.getRows(); i++) {
+			for (int j = 0; j < image.getCols(); j++) {
+				imageVector[counter] = image.getPixel(i, j);
+				counter++;
+			}
+		}
+		return imageVector;
+	}
 
 	public static void main(String[] args) {
 		try {
@@ -31,7 +43,7 @@ public class Run1 {
     		// For every classification image group of an image..
     		for (String s : groups) {
 	    		// For every image in the image group...
-    			// Ignore duplicates for
+    			// Ignore duplicates
     			if (!s.equals("training")) {
 		    		for (FImage image : training.getInstances(s)) {
 		    			// TODO Crop image to a square
@@ -40,14 +52,7 @@ public class Run1 {
 		    			FImage resized = image.process(new ResizeProcessor(16, 16, false));
 		    			
 		    			// Create vector by concatenating each image row
-		    			int counter = 0;
-		    			float[] imageVector = new float[resized.getRows() * resized.getCols()];
-		    			for (int i = 0; i < resized.getRows(); i++) {
-		    				for (int j = 0; j < resized.getCols(); j++) {
-		    					imageVector[counter] = resized.getPixel(i, j);
-		    					counter++;
-		    				}
-		    			}
+		    			float[] imageVector = createVector(resized);
 		    			
 		    			VectorLabelPair imageVectorLabelPair = new VectorLabelPair(s, imageVector);
 		    			
@@ -74,16 +79,10 @@ public class Run1 {
 	    			FImage resized = image.process(new ResizeProcessor(16, 16, false));
 	    			
 	    			// Create vector by concatenating each image row
-	    			int counter = 0;
-	    			float[] imageVector = new float[resized.getRows() * resized.getCols()];
-	    			for (int i = 0; i < resized.getRows(); i++) {
-	    				for (int j = 0; j < resized.getCols(); j++) {
-	    					imageVector[counter] = resized.getPixel(i, j);
-	    					counter++;
-	    				}
-	    			}
+	    			float[] imageVector = createVector(resized);
 	    			
 	    			// Calculate distance to all vectors
+	    			// START OF DODGY SECTION @HANNAH LOOK AT THIS
 	    			ArrayList<VectorLabelPair> graphy = (ArrayList<VectorLabelPair>) graph.clone();
 	    			ArrayList<VectorLabelPair> topK = new ArrayList<VectorLabelPair>();
 	    			for (VectorLabelPair v : graphy) {
@@ -119,7 +118,7 @@ public class Run1 {
 	    			
 	    			// Output classification
 	    			System.out.println("Classified as: " + classification);
-	    			DisplayUtilities.display(resized, classification);
+	    			DisplayUtilities.display(image, classification);
     			}
     		}
     		
