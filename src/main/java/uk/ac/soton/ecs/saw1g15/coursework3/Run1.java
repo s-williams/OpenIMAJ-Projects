@@ -2,6 +2,7 @@ package uk.ac.soton.ecs.saw1g15.coursework3;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,7 +15,7 @@ import org.openimaj.image.processing.resize.ResizeProcessor;
 
 public class Run1 {
 
-	public final static int K = 1;
+	public final static int K = 5;
 	
 	static float[] createVector(FImage image) {
 		int counter = 0;
@@ -71,7 +72,7 @@ public class Run1 {
     		// For every image in the testing set...
     		int count = 0;
     		for (FImage image : testing) {
-    			if (count < 10) {
+    			if (count > -1) {
 	    			count++;
 	    			// TODO Crop image to a square
 	    			
@@ -82,24 +83,36 @@ public class Run1 {
 	    			float[] imageVector = createVector(resized);
 	    			
 	    			// Calculate distance to all vectors
-	    			// START OF DODGY SECTION @HANNAH LOOK AT THIS
 	    			ArrayList<VectorLabelPair> graphy = (ArrayList<VectorLabelPair>) graph.clone();
-	    			ArrayList<VectorLabelPair> topK = new ArrayList<VectorLabelPair>();
 	    			for (VectorLabelPair v : graphy) {
 	    				v.setDistanceFrom(imageVector);
 	    			}
-	    			// Find top k nearest neighbours
+	    			
+	    			// Find closest neighbour K times and store in topK
+	    			ArrayList<VectorLabelPair> topK = new ArrayList<VectorLabelPair>();
 	    			for (int i = 0; i < K; i++) {
 	    				VectorLabelPair closest = new VectorLabelPair("Awful", new float[0]);
 	    				closest.distance = Float.MAX_VALUE;
-	    				for (VectorLabelPair v : graphy) {
+	    				
+	    				Iterator<VectorLabelPair> iter = graphy.iterator();
+	    				while (iter.hasNext()) {
+	    					VectorLabelPair v = iter.next();
 	        				if (v.distance < closest.distance) {
-	        					topK.add(v);
+	        					closest = v;
+	        					iter.remove();
 	        				}
 	        			}
+    					topK.add(closest);
 	    			}
 	    			
-	    			// Find most common label
+//	    			//**** DEBUG *****
+	    			System.out.println("Content of topK:");
+	    			for (VectorLabelPair v : topK) {
+	    				System.out.println(v.label + " at distance " + v.distance);
+	    			}
+//	    			//****************
+	    			
+	    			// Find most common label in the K nearest
 	    			Map<String, Integer> labelsCount = new HashMap<>();
 	    			for (VectorLabelPair v : topK) {
 	    				  Integer c = labelsCount.get(v.label);
@@ -112,13 +125,12 @@ public class Run1 {
 	    			    if(mostRepeated == null || mostRepeated.getValue()<e.getValue())
 	    			        mostRepeated = e;
 	    			}
-	
-	    			
+	    			// Classification is most common label
 	    			String classification = mostRepeated.getKey();
 	    			
 	    			// Output classification
 	    			System.out.println("Classified as: " + classification);
-	    			DisplayUtilities.display(image, classification);
+//	    			DisplayUtilities.display(image, classification);
     			}
     		}
     		
