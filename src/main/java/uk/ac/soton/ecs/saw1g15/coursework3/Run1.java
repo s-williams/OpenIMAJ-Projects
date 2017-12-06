@@ -1,6 +1,7 @@
 package uk.ac.soton.ecs.saw1g15.coursework3;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -15,7 +16,7 @@ import org.openimaj.image.processing.resize.ResizeProcessor;
 
 public class Run1 {
 
-	public final static int K = 5;
+	public final static int K = 16;
 	
 	static float[] createVector(FImage image) {
 		int counter = 0;
@@ -72,7 +73,7 @@ public class Run1 {
     		// For every image in the testing set...
     		int count = 0;
     		for (FImage image : testing) {
-    			if (count > -1) {
+    			if (count < 5) {
 	    			count++;
 	    			// TODO Crop image to a square
 	    			
@@ -83,27 +84,31 @@ public class Run1 {
 	    			float[] imageVector = createVector(resized);
 	    			
 	    			// Calculate distance to all vectors
-	    			ArrayList<VectorLabelPair> graphy = (ArrayList<VectorLabelPair>) graph.clone();
-	    			for (VectorLabelPair v : graphy) {
+//	    			ArrayList<VectorLabelPair> graphy = (ArrayList<VectorLabelPair>) graph.clone();
+	    			for (VectorLabelPair v : graph) {
 	    				v.setDistanceFrom(imageVector);
 	    			}
 	    			
 	    			// Find closest neighbour K times and store in topK
-	    			ArrayList<VectorLabelPair> topK = new ArrayList<VectorLabelPair>();
-	    			for (int i = 0; i < K; i++) {
-	    				VectorLabelPair closest = new VectorLabelPair("Awful", new float[0]);
-	    				closest.distance = Float.MAX_VALUE;
-	    				
-	    				Iterator<VectorLabelPair> iter = graphy.iterator();
-	    				while (iter.hasNext()) {
-	    					VectorLabelPair v = iter.next();
-	        				if (v.distance < closest.distance) {
-	        					closest = v;
-	        					iter.remove();
-	        				}
-	        			}
-    					topK.add(closest);
-	    			}
+	    			Collections.sort(graph);
+	    			ArrayList<VectorLabelPair> topK = new ArrayList<VectorLabelPair>(graph.subList(0,K));
+//	    			for (int i = 0; i < K; i++) {
+//	    				VectorLabelPair closest = new VectorLabelPair("Awful", new float[0]);
+//	    				closest.distance = Float.MAX_VALUE;
+//	    				
+//	    				// Loop through testing data
+//	    				Iterator<VectorLabelPair> iter = graphy.iterator();
+//	    				while (iter.hasNext()) {
+//	    					VectorLabelPair v = iter.next();
+//	        				if (v.distance < closest.distance) {
+//	        					closest = v;
+//	        				}
+//	        			}
+//
+//	    				// Remove closest neighbour found
+//    					graphy.remove(graphy.indexOf(closest));
+//    					topK.add(closest);
+//	    			}
 	    			
 //	    			//**** DEBUG *****
 	    			System.out.println("Content of topK:");
@@ -130,7 +135,7 @@ public class Run1 {
 	    			
 	    			// Output classification
 	    			System.out.println("Classified as: " + classification);
-//	    			DisplayUtilities.display(image, classification);
+	    			DisplayUtilities.display(image, classification);
     			}
     		}
     		
@@ -141,7 +146,7 @@ public class Run1 {
 }
 
 // Stores a float vector and a label
-class VectorLabelPair {
+class VectorLabelPair implements Comparable<VectorLabelPair> {
 	String label;
 	float[] vector;
 	float distance;
@@ -154,9 +159,16 @@ class VectorLabelPair {
 	public void setDistanceFrom(float[] v) {
 		float sum = 0;
 		for (int i = 0; i < vector.length; i++) {
-			sum += (vector[i] + v[i]);
+			sum += (vector[i] - v[i]) * (vector[i] - v[i]);
 		}
 		distance = (float)Math.sqrt((double)sum);
+	}
+
+	@Override
+	public int compareTo(VectorLabelPair o) {
+		if (distance == o.distance) return 0;
+		if (distance >  o.distance) return 1;
+		return -1;
 	}
 	
 }

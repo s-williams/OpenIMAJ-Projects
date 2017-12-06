@@ -19,8 +19,10 @@ import org.openimaj.feature.local.list.LocalFeatureList;
 import org.openimaj.image.FImage;
 import org.openimaj.image.ImageUtilities;
 import org.openimaj.image.annotation.evaluation.datasets.Caltech101.Record;
+import org.openimaj.image.feature.dense.gradient.dsift.ByteDSIFTKeypoint;
 import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
 import org.openimaj.image.feature.local.aggregate.BlockSpatialAggregator;
+import org.openimaj.image.feature.local.keypoints.Keypoint;
 import org.openimaj.image.pixel.ConnectedComponent;
 import org.openimaj.ml.annotation.linear.LiblinearAnnotator;
 import org.openimaj.ml.clustering.ByteCentroidsResult;
@@ -48,27 +50,21 @@ public class Run2 {
 				
 				// Take pixels from patches and flatten them
 				float[] imageData = image.getPixelVectorNative(new float[image.getWidth() * image.getHeight()]);
+				// Mean centre and normalise patch before clustering
+				ByteKMeans km = ByteKMeans.createKDTreeEnsemble(300);
+				DataSource<byte[]> datasource = new LocalFeatureListDataSource<Keypoint, byte[]>();
+				ByteCentroidsResult result = km.cluster(datasource);
 
-				// Send to list
+				// Cluster each sample with k mean vocabulary
+				HardAssigner<byte[], float[], IntFloatPair> assigner = result.defaultHardAssigner();
+				BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
+				BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(
+		                bovw, 2, 2);
+				DoubleFV extractor = spatial.aggregate(image.getBounds()).normaliseFV();
 
+				LiblinearAnnotator<FImage, String> ann = new LiblinearAnnotator<FImage, String>(extractor,
+						Mode.MULTILABEL, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
 			}
-			// Mean centre and normalise patch before clustering
-			ByteKMeans km = ByteKMeans.createKDTreeEnsemble(500);
-			DataSource<byte[]> datasource = new ConnectedComponentListDataSource<float[], byte[]>(allPatches);
-
-			// Cluster each sample with k mean vocabulary
-			ByteCentroidsResult result = km.cluster(datasource);
-			HardAssigner<byte[], float[], IntFloatPair> assigner = result.defaultHardAssigner();
-
-			// Make Vector Quantiser- build a histogram of visual words and 
-			BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
-			BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(bovw,
-					2, 2);
-			DoubleFV extractor = spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
-
-			LiblinearAnnotator<FImage, String> ann = new LiblinearAnnotator<FImage, String>(extractor,
-					Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
-			ann.train(splits.getTrainingDataset());
 			
 			ClassificationEvaluator<CMResult<String>, String, Record<FImage>> eval = 
 					new ClassificationEvaluator<CMResult<String>, String, Record<FImage>>(
