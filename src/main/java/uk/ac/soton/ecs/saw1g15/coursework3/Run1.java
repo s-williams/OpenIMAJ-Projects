@@ -1,5 +1,9 @@
 package uk.ac.soton.ecs.saw1g15.coursework3;
 
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,7 +20,7 @@ import org.openimaj.image.processing.resize.ResizeProcessor;
 
 public class Run1 {
 
-	public final static int K = 16;
+	public final static int K = 5;
 
 	public static void main(String[] args) {
 		Run1 run = new Run1();
@@ -28,26 +32,39 @@ public class Run1 {
 
 			ArrayList<VectorLabelPair> graph = run.trainData(splits.getTrainingDataset());
 			System.out.println("Training done! Testing now!");
-			
-			// Classify all the images in the validation dataset and test if they are correct
-			int totalCorrect = 0;
+
+			// Classify all the images in the validation dataset and test if they are
+			// correct
+			double totalCorrect = 0;
+			double totalImages = 0;
 			for (String s : splits.getValidationDataset().getGroups()) {
-				System.out.println(splits.getValidationDataset().getInstances(s).size());
-				System.out.println(s);
-				// For every string in the group check if the classifier correctly classifies the images
+				// For every string in the group check if the classifier correctly classifies
+				// the images
 				if (!s.equals("training")) {
 					for (FImage image : splits.getValidationDataset().getInstances(s)) {
-						if(run.classifyImage(image, graph) == s) {
+						if (run.classifyImage(image, graph) == s) {
 							totalCorrect++;
 						}
+						totalImages++;
 					}
 				}
 			}
 
 			// Calc average precision of algorithm
-			System.out.println(splits.getValidationDataset().size());
-			System.out.println(splits.getValidationDataset().getGroups().size());
-			System.out.println("Average: " + totalCorrect/splits.getValidationDataset().size());
+			double average = (totalCorrect / totalImages)*100;
+			System.out.println("Average precision: " + average + "%");
+			
+			// Calculate values for the testing data and print them to run1.txt
+			VFSGroupDataset<FImage> testData = new VFSGroupDataset<FImage>(
+					"zip:http://comp3204.ecs.soton.ac.uk/cw/testing.zip", ImageUtilities.FIMAGE_READER);
+			try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+			              new FileOutputStream("run1.txt"), "utf-8"))) {
+				int nameCount = 0;
+				for(FImage i : testData) {
+					writer.write(nameCount + ".jpeg " + run.classifyImage(i, graph) + "\n");
+					nameCount++;
+				}
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -114,8 +131,7 @@ public class Run1 {
 	/**
 	 * Train the algorithm with the training data
 	 */
-	private ArrayList<VectorLabelPair> trainData(
-			GroupedDataset<String, ListDataset<FImage>, FImage> groupedDataset) {
+	private ArrayList<VectorLabelPair> trainData(GroupedDataset<String, ListDataset<FImage>, FImage> groupedDataset) {
 		// Plotted Vectors
 		ArrayList<VectorLabelPair> graph = new ArrayList<VectorLabelPair>();
 
@@ -128,7 +144,13 @@ public class Run1 {
 			// Ignore duplicates
 			if (!s.equals("training")) {
 				for (FImage image : groupedDataset.getInstances(s)) {
-					// TODO Crop image to a square
+					// TODO Scotts mess of a function needs fixing
+					// Crop image to a square
+//					DisplayUtilities.display(image);
+//					image = crop(image);
+//					DisplayUtilities.display(image);
+//					
+//					break;
 
 					// Resize the image to 16x16
 					FImage resized = image.process(new ResizeProcessor(16, 16, false));
@@ -143,7 +165,6 @@ public class Run1 {
 				}
 			}
 		}
-
 		return graph;
 	}
 
@@ -157,6 +178,21 @@ public class Run1 {
 			}
 		}
 		return imageVector;
+	}
+	
+	/**
+	 * Crop image to square around the centre
+	 */
+	public static FImage crop(FImage image) {
+		int index = Math.min(image.getCols(), image.getRows());
+		float[][] pixels = new float[index][index];
+		for (int y = 0; y < index; y++) {
+			for (int x = 0; x < index; x++) {
+				pixels[x][y] = image.pixels[x][y];
+			}
+		}
+		FImage cropped = new FImage(pixels);
+		return cropped;
 	}
 }
 
@@ -188,4 +224,11 @@ class VectorLabelPair implements Comparable<VectorLabelPair> {
 		return -1;
 	}
 
+	
+	
+	
+	
+	
+	
+	
 }
