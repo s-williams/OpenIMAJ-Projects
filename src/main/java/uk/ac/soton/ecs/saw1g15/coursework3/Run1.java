@@ -20,29 +20,26 @@ import org.openimaj.image.processing.resize.ResizeProcessor;
 
 public class Run1 {
 
-	public final static int K = 5;
+	public final static int K = 16;
 
 	public static void main(String[] args) {
-		Run1 run = new Run1();
 		try {
 			// Create training, testing and validating datasets
 			VFSGroupDataset<FImage> data = new VFSGroupDataset<FImage>(
 					"zip:http://comp3204.ecs.soton.ac.uk/cw/training.zip", ImageUtilities.FIMAGE_READER);
 			GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(data, 70, 20, 10);
 
-			ArrayList<VectorLabelPair> graph = run.trainData(splits.getTrainingDataset());
+			ArrayList<VectorLabelPair> graph = trainData(splits.getTrainingDataset());
 			System.out.println("Training done! Testing now!");
 
-			// Classify all the images in the validation dataset and test if they are
-			// correct
+			// Classify all the images in the validation dataset and test if they are correct
 			double totalCorrect = 0;
 			double totalImages = 0;
 			for (String s : splits.getValidationDataset().getGroups()) {
-				// For every string in the group check if the classifier correctly classifies
-				// the images
+				// For every string in the group check if the classifier correctly classifies the images
 				if (!s.equals("training")) {
 					for (FImage image : splits.getValidationDataset().getInstances(s)) {
-						if (run.classifyImage(image, graph) == s) {
+						if (classifyImage(image, graph) == s) {
 							totalCorrect++;
 						}
 						totalImages++;
@@ -50,18 +47,18 @@ public class Run1 {
 				}
 			}
 
-			// Calc average precision of algorithm
-			double average = (totalCorrect / totalImages)*100;
+			// Calculate average precision of algorithm
+			double average = (totalCorrect / totalImages) * 100;
 			System.out.println("Average precision: " + average + "%");
-			
+
 			// Calculate values for the testing data and print them to run1.txt
 			VFSGroupDataset<FImage> testData = new VFSGroupDataset<FImage>(
 					"zip:http://comp3204.ecs.soton.ac.uk/cw/testing.zip", ImageUtilities.FIMAGE_READER);
-			try (Writer writer = new BufferedWriter(new OutputStreamWriter(
-			              new FileOutputStream("run1.txt"), "utf-8"))) {
+			try (Writer writer = new BufferedWriter(
+					new OutputStreamWriter(new FileOutputStream("run1.txt"), "utf-8"))) {
 				int nameCount = 0;
-				for(FImage i : testData) {
-					writer.write(nameCount + ".jpeg " + run.classifyImage(i, graph) + "\n");
+				for (FImage i : testData) {
+					writer.write(nameCount + ".jpeg " + classifyImage(i, graph) + "\n");
 					nameCount++;
 				}
 			}
@@ -73,8 +70,9 @@ public class Run1 {
 	/**
 	 * K means Algorithm used to classify each item in a dataset
 	 */
-	private String classifyImage(FImage image, ArrayList<VectorLabelPair> graph) {
-		// TODO Crop image to a square
+	private static String classifyImage(FImage image, ArrayList<VectorLabelPair> graph) {
+		// Crop image to a square
+		image = crop(image);
 
 		// Resize the image to 16x16
 		FImage resized = image.process(new ResizeProcessor(16, 16, false));
@@ -83,8 +81,6 @@ public class Run1 {
 		float[] imageVector = createVector(resized);
 
 		// Calculate distance to all vectors
-		// ArrayList<VectorLabelPair> graphy = (ArrayList<VectorLabelPair>)
-		// graph.clone();
 		for (VectorLabelPair v : graph) {
 			v.setDistanceFrom(imageVector);
 		}
@@ -92,23 +88,6 @@ public class Run1 {
 		// Find closest neighbour K times and store in topK
 		Collections.sort(graph);
 		ArrayList<VectorLabelPair> topK = new ArrayList<VectorLabelPair>(graph.subList(0, K));
-		// for (int i = 0; i < K; i++) {
-		// VectorLabelPair closest = new VectorLabelPair("Awful", new float[0]);
-		// closest.distance = Float.MAX_VALUE;
-		//
-		// // Loop through testing data
-		// Iterator<VectorLabelPair> iter = graphy.iterator();
-		// while (iter.hasNext()) {
-		// VectorLabelPair v = iter.next();
-		// if (v.distance < closest.distance) {
-		// closest = v;
-		// }
-		// }
-		//
-		// // Remove closest neighbour found
-		// graphy.remove(graphy.indexOf(closest));
-		// topK.add(closest);
-		// }
 
 		// Find most common label in the K nearest
 		Map<String, Integer> labelsCount = new HashMap<>();
@@ -131,26 +110,20 @@ public class Run1 {
 	/**
 	 * Train the algorithm with the training data
 	 */
-	private ArrayList<VectorLabelPair> trainData(GroupedDataset<String, ListDataset<FImage>, FImage> groupedDataset) {
+	private static ArrayList<VectorLabelPair> trainData(
+			GroupedDataset<String, ListDataset<FImage>, FImage> groupedDataset) {
 		// Plotted Vectors
 		ArrayList<VectorLabelPair> graph = new ArrayList<VectorLabelPair>();
 
 		// Gets list of classifications in the dataset
 		Set<String> groups = groupedDataset.getGroups();
 
-		// For every classification image group of an image..
 		for (String s : groups) {
-			// For every image in the image group...
 			// Ignore duplicates
 			if (!s.equals("training")) {
 				for (FImage image : groupedDataset.getInstances(s)) {
-					// TODO Scotts mess of a function needs fixing
 					// Crop image to a square
-//					DisplayUtilities.display(image);
-//					image = crop(image);
-//					DisplayUtilities.display(image);
-//					
-//					break;
+					image = crop(image);
 
 					// Resize the image to 16x16
 					FImage resized = image.process(new ResizeProcessor(16, 16, false));
@@ -168,7 +141,10 @@ public class Run1 {
 		return graph;
 	}
 
-	static float[] createVector(FImage image) {
+	/**
+	 * Converts an image to a 1 dimensional image vector
+	 */
+	private static float[] createVector(FImage image) {
 		int counter = 0;
 		float[] imageVector = new float[image.getRows() * image.getCols()];
 		for (int i = 0; i < image.getRows(); i++) {
@@ -179,34 +155,57 @@ public class Run1 {
 		}
 		return imageVector;
 	}
-	
+
 	/**
 	 * Crop image to square around the centre
 	 */
-	public static FImage crop(FImage image) {
-		int index = Math.min(image.getCols(), image.getRows());
+	private static FImage crop(FImage image) {
+		int y = 0;
+		int x = 0;
+		int index = Math.min(image.getHeight() - 1, image.getWidth() - 1);
+		int y_max = index;
+		int x_max = index;
+		if (image.getHeight() > image.getWidth()) {
+			y = (int) (0.5 * ((image.getHeight() - 1) - (image.getWidth() - 1)));
+			y_max = y_max + y;
+		} else {
+			x = (int) (0.5 * (image.getWidth() - image.getHeight()));
+			x_max = x_max + x;
+		}
+
 		float[][] pixels = new float[index][index];
-		for (int y = 0; y < index; y++) {
-			for (int x = 0; x < index; x++) {
-				pixels[x][y] = image.pixels[x][y];
+		int newx = 0;
+		int newy = 0;
+		for (int i = y; i < y_max; i++) {
+			for (int j = x; j < x_max; j++) {
+				pixels[newy][newx] = image.getPixelNative(j, i);
+				newx++;
 			}
+			newx = 0;
+			newy++;
 		}
 		FImage cropped = new FImage(pixels);
 		return cropped;
 	}
 }
 
-// Stores a float vector and a label
+/** Stores a float vector and a label
+ * 
+ */
 class VectorLabelPair implements Comparable<VectorLabelPair> {
 	String label;
 	float[] vector;
 	float distance;
+
 
 	public VectorLabelPair(String label, float[] vector) {
 		this.label = label;
 		this.vector = vector;
 	}
 
+	/**
+	 * Finds the distance from a vector to this vector
+	 */
 	public void setDistanceFrom(float[] v) {
 		float sum = 0;
 		for (int i = 0; i < vector.length; i++) {
@@ -223,12 +222,4 @@ class VectorLabelPair implements Comparable<VectorLabelPair> {
 			return 1;
 		return -1;
 	}
-
-	
-	
-	
-	
-	
-	
-	
 }
