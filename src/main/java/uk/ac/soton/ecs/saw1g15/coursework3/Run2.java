@@ -77,7 +77,7 @@ public class Run2 {
 		}
 		// Cluster using K-Means to learn vocabulary
 		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(500);
-		DataSource<float[]> datasource = new FloatArrayBackedDataSource(imagePatches.toArray(new float[][]{}));
+		DataSource<float[]> datasource = new FloatArrayBackedDataSource(imagePatches.toArray(new float[][]{})); //HANNAH FFS ARRAYSTOREEXCEPTION GET ON IT
 		FloatCentroidsResult result = km.cluster(datasource);
 		return result.defaultHardAssigner();
 	}
@@ -112,7 +112,7 @@ public class Run2 {
 		return imagePatches;
 	}
 
-	class RunTwoExtractor implements FeatureExtractor<DoubleFV, FImage> {
+	static class RunTwoExtractor implements FeatureExtractor<DoubleFV, FImage> {
 	    HardAssigner<float[], float[], IntFloatPair> assigner;
 	
 	    public RunTwoExtractor(HardAssigner<float[], float[], IntFloatPair> assigner)
