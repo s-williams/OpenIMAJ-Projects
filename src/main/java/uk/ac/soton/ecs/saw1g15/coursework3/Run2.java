@@ -4,18 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openimaj.data.AbstractDataSource;
+import org.openimaj.data.ArrayBackedDataSource;
 import org.openimaj.data.ByteArrayBackedDataSource;
 import org.openimaj.data.DataSource;
 import org.openimaj.data.FloatArrayBackedDataSource;
+import org.openimaj.data.dataset.GroupedDataset;
+import org.openimaj.data.dataset.ListDataset;
 import org.openimaj.data.dataset.VFSGroupDataset;
 import org.openimaj.experiment.dataset.sampling.GroupedUniformRandomisedSampler;
+import org.openimaj.experiment.dataset.split.GroupedRandomSplitter;
 import org.openimaj.experiment.evaluation.classification.ClassificationEvaluator;
 import org.openimaj.experiment.evaluation.classification.ClassificationResult;
 import org.openimaj.experiment.evaluation.classification.analysers.confusionmatrix.CMResult;
 import org.openimaj.feature.DoubleFV;
+import org.openimaj.feature.FeatureExtractor;
 import org.openimaj.feature.SparseIntFV;
 import org.openimaj.feature.local.data.LocalFeatureListDataSource;
 import org.openimaj.feature.local.list.LocalFeatureList;
+import org.openimaj.feature.local.list.MemoryLocalFeatureList;
 import org.openimaj.image.FImage;
 import org.openimaj.image.ImageUtilities;
 import org.openimaj.image.annotation.evaluation.datasets.Caltech101.Record;
@@ -39,41 +45,88 @@ import org.openimaj.ml.annotation.linear.LiblinearAnnotator.Mode;
 public class Run2 {
 	public static void main(String[] args) {
 		try {
-			// Create a grouped dataset for the training data
-			VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>(
+			// Create training, testing and validating datasets
+			VFSGroupDataset<FImage> data = new VFSGroupDataset<FImage>(
 					"zip:http://comp3204.ecs.soton.ac.uk/cw/training.zip", ImageUtilities.FIMAGE_READER);
-			List<ConnectedComponent> allPatches = new ArrayList<ConnectedComponent>();
+			GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(data, 70, 20, 10);
 
-			for (FImage image : training) {
-				
-				// Loop through 8x8 patches in images
-				
-				// Take pixels from patches and flatten them
-				float[] imageData = image.getPixelVectorNative(new float[image.getWidth() * image.getHeight()]);
-				// Mean centre and normalise patch before clustering
-				ByteKMeans km = ByteKMeans.createKDTreeEnsemble(300);
-				DataSource<byte[]> datasource = new LocalFeatureListDataSource<Keypoint, byte[]>();
-				ByteCentroidsResult result = km.cluster(datasource);
+			// Make 15 lib-linear classifiers for each image
+			HardAssigner<float[], float[], IntFloatPair> assigner = trainData(splits.getTrainingDataset());
+			FeatureExtractor<DoubleFV, FImage> extractor = new RunTwoExtractor(assigner);
 
-				// Cluster each sample with k mean vocabulary
-				HardAssigner<byte[], float[], IntFloatPair> assigner = result.defaultHardAssigner();
-				BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
-				BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(
-		                bovw, 2, 2);
-				DoubleFV extractor = spatial.aggregate(image.getBounds()).normaliseFV();
-
-				LiblinearAnnotator<FImage, String> ann = new LiblinearAnnotator<FImage, String>(extractor,
-						Mode.MULTILABEL, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
-			}
-			
-			ClassificationEvaluator<CMResult<String>, String, Record<FImage>> eval = 
-					new ClassificationEvaluator<CMResult<String>, String, Record<FImage>>(
-						ann, splits.getTestDataset(), new CMAnalyser<Record<FImage>, String>(CMAnalyser.Strategy.SINGLE));
-						
-			Map<Record<FImage>, ClassificationResult<String>> guesses = eval.evaluate();
+			// Map each patch to a visual word
+			LiblinearAnnotator<FImage, String> ann = new LiblinearAnnotator<FImage, String>(extractor,
+					Mode.MULTILABEL, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
 
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Make 15 lib linear classifiers for each type of image
+	 */
+	private static HardAssigner<float[], float[], IntFloatPair> trainData(
+			GroupedDataset<String, ListDataset<FImage>, FImage> groupedDataset) {
+
+		// Loop through each image type and create array list of all the patches
+		ArrayList<float[][]> imagePatches = new ArrayList<float[][]>();
+		for (FImage image : groupedDataset) {
+			// get 8x8 patches of image
+			imagePatches.addAll(getPatches(image));
+		}
+		// Cluster using K-Means to learn vocabulary
+		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(500);
+		DataSource<float[]> datasource = new FloatArrayBackedDataSource(imagePatches.toArray(new float[][]{}));
+		FloatCentroidsResult result = km.cluster(datasource);
+		return result.defaultHardAssigner();
+	}
+	
+	/**
+	 * Get 8x8 patches of image
+	 */
+	private static LocalFeatureList getPatches(FImage image) {
+		LocalFeatureList imagePatches = new MemoryLocalFeatureList();
+		int noOfPatches = 0;
+		if(image.getHeight() > image.getWidth()) {
+			noOfPatches = Math.floorDiv(image.getWidth(), 4)-1;
+		} else {
+			noOfPatches = Math.floorDiv(image.getHeight(), 4)-1;
+		}
+		
+		// Loop through each patch in the x and y direction
+		for(int i = 0; i!=noOfPatches; i++) {
+			for(int j = 0; j!=noOfPatches; j++) {
+				
+				// Loop through each pixel in the patch and make the patch float[][]
+				float[][] currentPatch = new float[8][8];
+				for(int x = 0; x<8; x++) {
+					for(int y = 0; y<8; y++) {
+						currentPatch[x][y] = image.getPixelNative(x+i, y+j);
+					}
+				}
+				// TODO mean-centring and normalising each patch before clustering/quantisation
+				imagePatches.add(currentPatch);
+			}
+		}
+		return imagePatches;
+	}
+
+	class RunTwoExtractor implements FeatureExtractor<DoubleFV, FImage> {
+	    HardAssigner<float[], float[], IntFloatPair> assigner;
+	
+	    public RunTwoExtractor(HardAssigner<float[], float[], IntFloatPair> assigner)
+	    {
+	        this.assigner = assigner;
+	    }
+	
+		@Override
+		public DoubleFV extractFeature(FImage image) {
+			// Break image into patches and associate each patch with a visual word based on histogram of image
+	        BagOfVisualWords<float[]> bovw = new BagOfVisualWords<float[]>(assigner);
+	        BlockSpatialAggregator<float[], SparseIntFV> spatialHist = new BlockSpatialAggregator<float[], SparseIntFV>(
+	                bovw, 2, 2);
+	        return spatialHist.aggregate(getPatches(image), image.getBounds()).normaliseFV();
 		}
 	}
 }
