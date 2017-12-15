@@ -65,6 +65,7 @@ public class Run3 {
 
 	private void run(String[] args) {
 		try {
+<<<<<<< HEAD
 			/**
 			 * cd Data Setup -> organize and limit data file paths: - mainPath =
 			 * path to image files - fileSplit = define basic dataset split with
@@ -184,6 +185,12 @@ public class Run3 {
 				ModelSerializer.writeModel(network, basePath + "model.bin", true);
 			}
 			System.out.println("****************Example finished********************");
+=======
+			// Create training, testing and validating datasets
+			VFSGroupDataset<FImage> data = new VFSGroupDataset<FImage>(
+					"zip:http://comp3204.ecs.soton.ac.uk/cw/training.zip", ImageUtilities.FIMAGE_READER);
+			GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(data, 70, 20, 10);
+>>>>>>> 1d767f0a56f3dcbb36f3afd7101a14f7c106b64f
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
