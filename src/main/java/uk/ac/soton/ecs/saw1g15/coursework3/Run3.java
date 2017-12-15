@@ -12,9 +12,6 @@ public class Run3 {
 			VFSGroupDataset<FImage> data = new VFSGroupDataset<FImage>(
 					"zip:http://comp3204.ecs.soton.ac.uk/cw/training.zip", ImageUtilities.FIMAGE_READER);
 			GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(data, 70, 20, 10);
-			
-			
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
