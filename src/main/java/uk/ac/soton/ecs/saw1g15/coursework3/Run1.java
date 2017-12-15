@@ -21,6 +21,7 @@ import org.openimaj.image.processing.resize.ResizeProcessor;
 public class Run1 {
 
 	public final static int K = 16;
+	public final static int R = 8;
 
 	public static void main(String[] args) {
 		try {
@@ -58,7 +59,7 @@ public class Run1 {
 					new OutputStreamWriter(new FileOutputStream("run1.txt"), "utf-8"))) {
 				int nameCount = 0;
 				for (FImage i : testData) {
-					writer.write(nameCount + ".jpeg " + classifyImage(i, graph) + "\n");
+					writer.write(nameCount + ".jpg " + classifyImage(i, graph) + "\n");
 					nameCount++;
 				}
 			}
@@ -75,7 +76,7 @@ public class Run1 {
 		image = crop(image);
 
 		// Resize the image to 16x16
-		FImage resized = image.process(new ResizeProcessor(16, 16, false));
+		FImage resized = image.process(new ResizeProcessor(R, R, false));
 
 		// Create vector by concatenating each image row
 		float[] imageVector = createVector(resized);
@@ -126,7 +127,7 @@ public class Run1 {
 					image = crop(image);
 
 					// Resize the image to 16x16
-					FImage resized = image.process(new ResizeProcessor(16, 16, false));
+					FImage resized = image.process(new ResizeProcessor(R, R, false));
 
 					// Create vector by concatenating each image row
 					float[] imageVector = createVector(resized);

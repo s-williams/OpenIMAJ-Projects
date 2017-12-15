@@ -6,6 +6,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.openimaj.data.AbstractDataSource;
 import org.openimaj.data.ArrayBackedDataSource;
@@ -19,6 +20,7 @@ import org.openimaj.experiment.dataset.sampling.GroupedUniformRandomisedSampler;
 import org.openimaj.experiment.dataset.split.GroupedRandomSplitter;
 import org.openimaj.experiment.evaluation.classification.ClassificationEvaluator;
 import org.openimaj.experiment.evaluation.classification.ClassificationResult;
+import org.openimaj.experiment.evaluation.classification.analysers.confusionmatrix.CMAnalyser;
 import org.openimaj.experiment.evaluation.classification.analysers.confusionmatrix.CMResult;
 import org.openimaj.feature.DoubleFV;
 import org.openimaj.feature.FeatureExtractor;
@@ -57,43 +59,34 @@ public class Run2 {
 					"zip:http://comp3204.ecs.soton.ac.uk/cw/training.zip", ImageUtilities.FIMAGE_READER);
 			GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(data, 10, 5, 5);
 
-			// Make 15 lib-linear classifiers for each image
+			// Create a hard assigner to features to identifiers
 			HardAssigner<float[], float[], IntFloatPair> assigner = trainData(splits.getTrainingDataset());
 			FeatureExtractor<DoubleFV, FImage> extractor = new RunTwoExtractor(assigner);
 
 			// Map each patch to a visual word
+			// TODO Make 15 of these?!
 			LiblinearAnnotator<FImage, String> ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTILABEL,
 					SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
 			ann.train(splits.getTrainingDataset());
 
 			// Test the accuracy of the classifier
-			double totalCorrect = 0;
-			double totalImages = 0;
-			for (String s : splits.getValidationDataset().getGroups()) {
-				// For every string in the group check if the classifier correctly classifies
-				// the images
-				if (!s.equals("training")) {
-					for (FImage image : splits.getValidationDataset().getInstances(s)) {
-						if (ann.classify(image).getPredictedClasses().contains(s)) {
-							totalCorrect++;
-						}
-						totalImages++;
-					}
-				}
-			}
+			ClassificationEvaluator<CMResult<String>, String, FImage> eval = new ClassificationEvaluator<CMResult<String>, String, FImage>(
+					ann, splits.getTestDataset(), new CMAnalyser<FImage, String>(CMAnalyser.Strategy.SINGLE));
+			Map<FImage, ClassificationResult<String>> guesses = eval.evaluate();
+			CMResult<String> result = eval.analyse(guesses);
+			System.out.println(result);
 
-			// Calculate average precision of algorithm
-			double average = (totalCorrect / totalImages) * 100;
-			System.out.println("Average precision: " + average + "%");
-
-			// Calculate values for the testing data and print them to run1.txt
+			// Classify the testing data and print them to run1.txt
 			VFSGroupDataset<FImage> testData = new VFSGroupDataset<FImage>(
 					"zip:http://comp3204.ecs.soton.ac.uk/cw/testing.zip", ImageUtilities.FIMAGE_READER);
+			ClassificationEvaluator<CMResult<String>, String, FImage> testingDataClass = new ClassificationEvaluator<CMResult<String>, String, FImage>(
+					ann, testData, new CMAnalyser<FImage, String>(CMAnalyser.Strategy.SINGLE));
+			Map<FImage, ClassificationResult<String>> guessesTestingData = testingDataClass.evaluate();
 			try (Writer writer = new BufferedWriter(
 					new OutputStreamWriter(new FileOutputStream("run2.txt"), "utf-8"))) {
 				int nameCount = 0;
-				for (FImage i : testData) {
-					writer.write(nameCount + ".jpeg " + ann.classify(i).getPredictedClasses() + "\n");
+				for (FImage i : guessesTestingData.keySet()) {
+					writer.write(nameCount + ".jpg " + guessesTestingData.get(i).getPredictedClasses().toArray()[0] + "\n");
 					nameCount++;
 				}
 			}
@@ -103,38 +96,44 @@ public class Run2 {
 	}
 
 	/**
-	 * Make 15 lib linear classifiers for each type of image
+	 * Create a hard assigner to assign features to identifiers
 	 */
 	private static HardAssigner<float[], float[], IntFloatPair> trainData(
 			GroupedDataset<String, ListDataset<FImage>, FImage> groupedDataset) {
 
 		// Loop through each image type and create array list of all the patches
-		ArrayList<float[][]> imagePatches = new ArrayList<float[][]>();
+		ArrayList<float[]> vectorPatches = new ArrayList<float[]>();
+		
 		for (FImage image : groupedDataset) {
-			// get 8x8 patches of image
-			imagePatches.addAll(getPatches(image));
+			// get 8x8 patches of image sampled every fourth pixel
+			for(float[] patch : getPatches(image, 8, 4)) {
+				vectorPatches.add(patch);
+			}
+			vectorPatches.addAll(getPatches(image, 8, 4));
 		}
-		// Cluster using K-Means to learn vocabulary
-		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(500);
-		DataSource<float[]> datasource = new FloatArrayBackedDataSource(imagePatches.toArray(new float[][]{})); // HANNAH
+		// Vector quantisation 
+		DataSource<float[]> datasource = new FloatArrayBackedDataSource(vectorPatches.toArray(new float[][]{}));
+		//DataSource<float[]> datasource = new FloatArrayBackedDataSource(imagePatches.toArray(new float[][]{})); // HANNAH
 																												// FFS
 																												// ARRAYSTOREEXCEPTION
 																												// GET
 																												// ON IT
+		// Cluster using K-Means to learn vocabulary
+		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(500);
 		FloatCentroidsResult result = km.cluster(datasource);
 		return result.defaultHardAssigner();
 	}
 
 	/**
-	 * Get 8x8 patches of image
+	 * Get patches of a certain size in an image sampled at a certain distance apart
 	 */
-	private static ArrayList<float[][]> getPatches(FImage image) {
-		ArrayList<float[][]> imagePatches = new ArrayList<float[][]>();
+	private static ArrayList<float[]> getPatches(FImage image, int sizeOfPatch, int distanceApart) {
+		ArrayList<float[]> imagePatches = new ArrayList<float[]>();
 		int noOfPatches = 0;
 		if (image.getHeight() > image.getWidth()) {
-			noOfPatches = Math.floorDiv(image.getWidth(), 4) - 1;
+			noOfPatches = Math.floorDiv(image.getWidth(), distanceApart) - 1;
 		} else {
-			noOfPatches = Math.floorDiv(image.getHeight(), 4) - 1;
+			noOfPatches = Math.floorDiv(image.getHeight(), distanceApart) - 1;
 		}
 
 		// Loop through each patch in the x and y direction
@@ -142,15 +141,17 @@ public class Run2 {
 			for (int j = 0; j != noOfPatches; j++) {
 
 				// Loop through each pixel in the patch and make the patch float[][]
-				float[][] currentPatch = new float[8][8];
-				for (int x = 0; x < 8; x++) {
-					for (int y = 0; y < 8; y++) {
+				float[][] currentPatch = new float[sizeOfPatch][sizeOfPatch];
+				for (int x = 0; x < sizeOfPatch; x++) {
+					for (int y = 0; y < sizeOfPatch; y++) {
 						currentPatch[x][y] = image.getPixelNative(x + i, y + j);
 					}
 				}
 				// TODO mean-centring and normalising each patch before clustering/quantisation
-				
-				imagePatches.add(currentPatch);
+				// Flatten each pixel into a vector
+				FImage patchImage = new FImage(currentPatch);
+				float[] imageData = patchImage.getPixelVectorNative(new float[patchImage.getWidth() * patchImage.getHeight()]);
+				imagePatches.add(imageData);
 			}
 		}
 		return imagePatches;
@@ -168,9 +169,7 @@ public class Run2 {
 			// Break image into patches and associate each patch with a visual word based on
 			// histogram of image
 			BagOfVisualWords<float[]> bovw = new BagOfVisualWords<float[]>(assigner);
-			BlockSpatialAggregator<float[], SparseIntFV> spatialHist = new BlockSpatialAggregator<float[], SparseIntFV>(
-					bovw, 2, 2);
-			return spatialHist.aggregate(getPatches(image), image.getBounds()).normaliseFV();
+			return bovw.aggregateVectorsRaw(getPatches(image,8,4)).normaliseFV();
 		}
 	}
 }
